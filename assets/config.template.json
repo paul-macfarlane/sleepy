@@ -1,0 +1,15 @@
+{
+  "username": "YOUR_SLEEPER_USERNAME",
+  "user_id": "RESOLVED_DURING_ONBOARDING",
+  "discord_webhook": "https://discord.com/api/webhooks/…",
+  "season": "2026",
+  "leagues": [
+    {
+      "slug": "short-name-for-files",
+      "name": "League Display Name",
+      "league_id": "…",
+      "draft_id": "…",
+      "slot": 0
+    }
+  ]
+}

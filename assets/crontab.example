@@ -1,0 +1,6 @@
+# Sleepy season-mode schedule (adjust times to your timezone)
+0 8  * * 2 claude -p "Sleepy: Tuesday waiver report"  >> ~/sleepy/logs/waivers.log 2>&1
+0 17 * * 4 claude -p "Sleepy: Thursday lineup check"  >> ~/sleepy/logs/lineups.log 2>&1
+0 11 * * 0 claude -p "Sleepy: Sunday lineup check"    >> ~/sleepy/logs/lineups.log 2>&1
+# Optional Monday recap:
+# 0 9 * * 1 claude -p "Sleepy: weekly recap"          >> ~/sleepy/logs/recap.log  2>&1
