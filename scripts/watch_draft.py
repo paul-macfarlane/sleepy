@@ -30,7 +30,7 @@ Board: whenever the user is within --near-picks of the clock (or on it), or
 counts league-wide, the last 5 picks, position-run flags, the top --top
 available skill players with injury tags, and "by_position" — the best few
 at every position including TE, K and DEF, which a rank-sorted top-N hides
-(mock #6: five board.py calls just to see the TE and K tiers). One call, one
+(so TE/K/DEF never need a separate board.py call). One call, one
 round trip, no need to run board.py separately.
 
 Polling: 15s (floor 10) while live in a real draft; 5s with --mock (CPU picks
@@ -116,7 +116,7 @@ def next_user_pick(pick_count, slot, teams, rounds, reversal_round=0):
 
 
 def short_name(first, last):
-    """'J. Williams' — surname alone is ambiguous on a phone (two RB Williams in mock #5)."""
+    """'J. Williams' — surname alone is ambiguous on a phone (several RB Williams exist)."""
     first = (first or "").strip()
     last = (last or "").strip()
     return f"{first[0]}. {last}" if first and last else (last or first)
