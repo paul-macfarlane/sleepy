@@ -4,7 +4,7 @@ Run this when the user asks to onboard, when `~/sleepy/config.json` is missing, 
 
 ## 1. Config bootstrap
 
-1. Create `~/sleepy/` with subdirs `strategy/ notes/ cache/ logs/`.
+1. Create `~/sleepy/` with subdirs `strategy/ notes/ cache/ state/ logs/`.
 2. Ask for the user's Sleeper username; resolve `.user_id` via `/user/<username>`.
 3. Ask for (or create) a Discord webhook URL; store in config; send a test message via `scripts/notify.sh "Sleepy is connected ✅"` and confirm the user received it. If they don't have one: Discord → their private server → channel settings → Integrations → Webhooks → New Webhook → copy URL.
 4. Discover leagues via `/user/<user_id>/leagues/nfl/<season>`; confirm which to manage; for each, find its draft via `/league/<league_id>/drafts` and record league_id, draft_id, slot (from `.draft_order` once posted), a short slug for filenames.

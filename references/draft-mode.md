@@ -71,7 +71,7 @@ Same loop. Differences:
 - Find the mock's draft_id via `/user/<user_id>/drafts/nfl/<season>` if the user doesn't have it handy.
 - `league_id` may be null → use the draft's own settings; ask which real league to simulate and load that strategy/notes pair.
 - Pass `--mock` to the watcher (5s polling; CPU picks are instant).
-- Purpose is rehearsal: v1 validation (clock detection, no missed picks) *and* strategy stress-testing.
+- Purpose is rehearsal: tooling validation (clock detection, no missed picks) *and* strategy stress-testing.
 - **Debrief is mandatory** at mock end: what the board did vs. expectations, where the strategy held/broke, which interrupt rules fired correctly or wrongly, **which of the user's picks landed without a shortlist and why**, and proposed strategy-file edits (apply only with sign-off). Append a summary to `~/sleepy/advice-log.md`.
 
 ## Crash recovery
@@ -81,7 +81,7 @@ All draft state is reconstructable from the API — nothing is lost when a sessi
 1. Re-run preflight steps 1–2 and 6 (re-arm the Monitor; `--baseline` gives you the current state and board in one event).
 2. Report position in one line ("Resumed at pick 41; you're up in 6; nothing critical missed / here's what changed: …") and pre-stage the next shortlist.
 
-Rehearse this once per Phase 1 by killing the session mid-mock and resuming.
+Rehearse this at least once before a real draft by killing the session mid-mock and resuming.
 
 ## After the draft
 

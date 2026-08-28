@@ -3,7 +3,8 @@
 
 Usage:
     watch_draft.py DRAFT_ID [--loop] [--mock] [--slot N] [--near-picks 3] [--board]
-                            [--interval 15] [--timeout 900] [--baseline] [--top 15]
+                            [--interval 15] [--fast-interval 5] [--timeout 900]
+                            [--baseline] [--top 15]
 
 Two modes:
 
