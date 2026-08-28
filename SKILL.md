@@ -25,6 +25,7 @@ All user data lives in `~/sleepy/` (never inside this skill directory — the sk
 ├── strategy/<league>.md  # per-league strategy from onboarding interview
 ├── notes/<league>.md     # per-league rules the API lacks (keepers, payouts, house rules)
 ├── cache/players.json    # cached /players/nfl dump (refresh if >7 days old)
+├── state/                # draft watcher state + draft_<id>_last.json event files
 ├── logs/                 # cron output + advice log
 └── advice-log.md         # running record: advice given, what happened
 ```
@@ -33,7 +34,7 @@ If `~/sleepy/config.json` doesn't exist, offer to run onboarding regardless of w
 
 ## The Sleeper API
 
-Base `https://api.sleeper.app/v1`, public, read-only, no auth. Poll every 15s during a live draft (5s for mocks via `--mock`), 30s while idle. Full endpoint reference, response shapes, and snake-draft pick math: `references/sleeper-api.md`. Helper scripts (all read `~/sleepy/config.json`):
+Base `https://api.sleeper.app/v1`, public, read-only, no auth. Poll every 15s during a live draft (5s for mocks via `--mock`, and 5s whenever the user is within 3 picks), 30s while idle. Full endpoint reference, response shapes, and snake-draft pick math: `references/sleeper-api.md`. Helper scripts (`watch_draft.py`, `board.py` and `notify.sh` read `~/sleepy/config.json`; all honor `$SLEEPY_HOME`):
 
 - `scripts/sleeper.sh <path>` — GET any endpoint, e.g. `scripts/sleeper.sh /league/12345`
 - `scripts/cache_players.sh` — fetch/refresh the ~5MB player dump

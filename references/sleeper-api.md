@@ -1,6 +1,6 @@
 # Sleeper API reference
 
-Base URL: `https://api.sleeper.app/v1`. Public, read-only, no auth, JSON. Be polite: 15s between polls during a live draft (5s for CPU mocks), 30s while idle; the hard platform limit is ~1000/min, so even 5s polling (2 req/poll = 24 req/min) is far under it. Official docs: https://docs.sleeper.com
+Base URL: `https://api.sleeper.app/v1`. Public, read-only, no auth, JSON. Be polite: 15s between polls during a live draft (5s for CPU mocks, and 5s when the user is within 3 picks of the clock), 30s while idle; the hard platform limit is ~1000/min, so even 5s polling (2 req/poll = 24 req/min) is far under it. Official docs: https://docs.sleeper.com
 
 ## Endpoints Sleepy uses
 
@@ -41,11 +41,11 @@ Picks until on the clock = (user's next pick_no) − (current picks made) − 1.
 
 ## Auction drafts
 
-Not supported in v1. If `.type == "auction"`, say so and offer conversational advice without the polling loop.
+Not supported. If `.type == "auction"`, say so and offer conversational advice without the polling loop.
 
 ## Player dump tips
 
-`cache/players.json` is keyed by player_id. Useful fields: `full_name`, `position`, `team`, `age`, `injury_status`, `years_exp`, `depth_chart_order`. Don't load the whole file into context — grep/jq for the players you need:
+`cache/players.json` is keyed by player_id. Useful fields: `full_name` (`first_name`/`last_name`), `position`, `team`, `age`, `active`, `search_rank` (the board sorts on it; team DEFs have none), `injury_status`, `injury_body_part`, `injury_notes`, `years_exp`, `depth_chart_order`. Don't load the whole file into context — grep/jq for the players you need:
 
 ```bash
 jq -r '.["4046"] | "\(.full_name) \(.position) \(.team) \(.injury_status)"' ~/sleepy/cache/players.json
