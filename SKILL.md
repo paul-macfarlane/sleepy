@@ -37,8 +37,8 @@ Base `https://api.sleeper.app/v1`, public, read-only, no auth. Poll every 15s du
 
 - `scripts/sleeper.sh <path>` — GET any endpoint, e.g. `scripts/sleeper.sh /league/12345`
 - `scripts/cache_players.sh` — fetch/refresh the ~5MB player dump
-- `scripts/watch_draft.py <draft_id> --loop [--mock]` — the draft-mode primitive. Runs until the draft completes, printing one JSON line per state change (new picks, status, user on the clock, fetch errors); when the user is ≤3 picks out the line already includes the board (roster, counts, runs, top available with injury tags). Arm it with the `Monitor` tool so events wake you — never poll by hand. Without `--loop` it's one-shot (blocks for one change, then exits); `--baseline` prints the current state immediately.
-- `scripts/board.py <draft_id> [N] [slot]` — human-readable board for ad-hoc questions; the same data ships inside watch events, so don't call it on the clock.
+- `scripts/watch_draft.py <draft_id> --loop [--mock]` — the draft-mode primitive. Runs until the draft completes, printing one short JSON line per state change (new picks, status, user on the clock, fetch errors); when the user is ≤3 picks out the line carries the board headline (roster, runs, top 6) and `event_file` points at the full report — whole board, best-by-position incl. TE/K/DEF — in `~/sleepy/state/draft_<id>_last.json`. Arm it with the `Monitor` tool so events wake you — never poll by hand. Without `--loop` it's one-shot (blocks for one change, then exits); `--baseline` prints the current state immediately.
+- `scripts/board.py <draft_id> [N] [slot] [--pos TE,K,DEF] [--max-age 25]` — human-readable board for ad-hoc questions (per-position and age filters for TE/K/DEF tiers and rd-9+ keeper scans); the same data ships in the event file, so don't call it on the clock.
 - `scripts/notify.sh "<message>"` — post to the user's Discord webhook
 
 ## Modes
