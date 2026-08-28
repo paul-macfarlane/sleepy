@@ -6,7 +6,7 @@ few at every position (TE/K/DEF included — a rank-sorted top list hides them).
 Usage: board.py DRAFT_ID [N] [SLOT] [--pos TE,K] [--max-age 25]
 
   --pos      only list these positions (comma-separated), N deep each
-  --max-age  drop players older than this (rd 9+ keeper-swing scans)
+  --max-age  drop players older than this (late-round youth / keeper scans)
 
 Thin wrapper over watch_draft.build_board — the same data ships inside
 watch_draft.py's JSON as "board" (and in ~/sleepy/state/draft_{id}_last.json)
