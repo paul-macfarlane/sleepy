@@ -17,11 +17,21 @@ Two modes:
   completes. Fetch failures are reported as {"error": ...} lines after 3
   consecutive misses and polling continues — the loop never dies silently.
 
+  Monitor notifications truncate long lines (~500 chars), so the loop line is
+  deliberately small: status, counts, new picks as short strings ("6 Jonathan
+  Taylor RB *" — * marks the user's own pick), on-clock flags, and when the
+  board is attached only its headline (roster, runs, top 6). The full report —
+  including the whole board with by-position groups — is written to
+  ~/sleepy/state/draft_{id}_last.json first; "event_file" in the line points
+  at it. Read that file, not board.py, when you need more than the headline.
+
 Board: whenever the user is within --near-picks of the clock (or on it), or
 --board is passed, the report includes "board": the user's roster, position
-counts league-wide, the last 5 picks, position-run flags, and the top --top
-available skill players with injury tags. One call, one round trip, no need
-to run board.py separately.
+counts league-wide, the last 5 picks, position-run flags, the top --top
+available skill players with injury tags, and "by_position" — the best few
+at every position including TE, K and DEF, which a rank-sorted top-N hides
+(mock #6: five board.py calls just to see the TE and K tiers). One call, one
+round trip, no need to run board.py separately.
 
 Polling: 15s (floor 10) while live in a real draft; 5s with --mock (CPU picks
 land instantly); 5s whenever the user is within --near-picks; 30s while
@@ -44,6 +54,9 @@ if not os.environ.get("SSL_CERT_FILE"):
 BASE = "https://api.sleeper.app/v1"
 SLEEPY_HOME = os.environ.get("SLEEPY_HOME", os.path.expanduser("~/sleepy"))
 SKILL_POS = ("QB", "RB", "WR", "TE")
+# Best-N per position always shipped with the board, so TE/K/DEF are visible
+# even when the rank-sorted top list is all RB/WR/QB.
+BY_POSITION_N = {"QB": 4, "RB": 6, "WR": 6, "TE": 4, "K": 3, "DEF": 3}
 HARD_INJURY = ("Out", "IR", "PUP", "Doubtful", "NA", "Sus")
 
 
@@ -133,8 +146,36 @@ def injury(p):
     }
 
 
+def avail_entry(p):
+    name = p.get("last_name") if p.get("position") == "DEF" else f"{p.get('first_name', '')} {p.get('last_name', '')}".strip()
+    return {
+        "rank": p.get("search_rank") or 0,
+        "player": name,
+        "position": p["position"],
+        "team": p["team"],
+        "age": p.get("age"),
+        "injury": injury(p),
+    }
+
+
+def available(players, gone, positions):
+    """Active, rostered, undrafted players at these positions, best search_rank first.
+    Sleeper gives team DEFs no search_rank — they pass through unranked (rank 0), alphabetical."""
+    def ranked(p):
+        if p.get("position") == "DEF":
+            return True
+        return bool(p.get("search_rank")) and p["search_rank"] < 9999
+    avail = [
+        p for p in players.values()
+        if p.get("active") and ranked(p)
+        and p.get("position") in positions and p.get("team") and p.get("player_id") not in gone
+    ]
+    avail.sort(key=lambda p: (p.get("search_rank") or 0, p.get("last_name") or ""))
+    return avail
+
+
 def build_board(picks, slot, top_n):
-    """Roster / counts / runs / top-N available — the same data board.py prints, as JSON."""
+    """Roster / counts / runs / top-N available / by-position — the same data board.py prints, as JSON."""
     players = load_players()
     gone = {p.get("player_id") for p in picks}
     mine = [p for p in picks if p.get("draft_slot") == slot]
@@ -148,23 +189,12 @@ def build_board(picks, slot, top_n):
     run_counts = Counter((p.get("metadata") or {}).get("position") for p in last5)
     runs = sorted(pos for pos, c in run_counts.items() if pos and c >= 3)
 
-    avail = [
-        p for p in players.values()
-        if p.get("active") and p.get("search_rank") and p["search_rank"] < 9999
-        and p.get("position") in SKILL_POS and p.get("team") and p.get("player_id") not in gone
-    ]
-    avail.sort(key=lambda p: p["search_rank"])
-    top = [
-        {
-            "rank": p["search_rank"],
-            "player": f"{p.get('first_name', '')} {p.get('last_name', '')}".strip(),
-            "position": p["position"],
-            "team": p["team"],
-            "age": p.get("age"),
-            "injury": injury(p),
-        }
-        for p in avail[:top_n]
-    ]
+    pool = available(players, gone, tuple(BY_POSITION_N))
+    top = [avail_entry(p) for p in pool if p["position"] in SKILL_POS][:top_n]
+    by_pos = {
+        pos: [avail_entry(p) for p in pool if p["position"] == pos][:n]
+        for pos, n in BY_POSITION_N.items()
+    }
     return {
         "my_roster": [label(p) for p in mine],
         "my_counts": dict(Counter((p.get("metadata") or {}).get("position") for p in mine)),
@@ -172,6 +202,7 @@ def build_board(picks, slot, top_n):
         "last_5": [label(p) for p in last5],
         "position_runs": runs,  # 3+ of a position in the last 5 picks
         "top_available": top,
+        "by_position": by_pos,  # best few at every position incl. TE/K/DEF
         "players_cache_loaded": bool(players),
     }
 
@@ -205,8 +236,33 @@ def report(draft, picks, prev_count, slot, near_picks, want_board, top_n):
     return rep
 
 
+def short_avail(p):
+    inj = p["injury"]
+    tag = f" {inj['tag']}{inj['status'][0]}:{inj['body_part'] or '?'}" if inj else ""
+    return f"{p['rank']} {p['player']} {p['position']} {p['team']} {p['age']}{tag}"
+
+
+def compact_report(rep, uid, event_file):
+    """Headline only — must survive a ~500-char notification truncation."""
+    c = {k: rep[k] for k in ("status", "total_picks_made", "user_next_pick_no",
+                             "picks_until_user", "on_clock", "draft_complete") if k in rep}
+    c["new_picks"] = [
+        f"{p['pick_no']} {p['player']} {p['position']}" + (" *" if uid and p.get("picked_by") == uid else "")
+        for p in rep.get("new_picks", [])
+    ]
+    if rep.get("reversal_round_unsupported"):
+        c["reversal_round_unsupported"] = True
+    b = rep.get("board")
+    if b:
+        c["roster"] = ", ".join(b["my_roster"]) or "(empty)"
+        c["runs"] = b["position_runs"]
+        c["top"] = [short_avail(p) for p in b["top_available"][:6]]
+    c["event_file"] = event_file
+    return c
+
+
 def emit(rep, compact):
-    print(json.dumps(rep, separators=(",", ":")) if compact else json.dumps(rep, indent=2))
+    print(json.dumps(rep, separators=(",", ":"), ensure_ascii=False) if compact else json.dumps(rep, indent=2, ensure_ascii=False))
     sys.stdout.flush()
 
 
@@ -238,6 +294,14 @@ def main():
     state_dir = os.path.join(SLEEPY_HOME, "state")
     os.makedirs(state_dir, exist_ok=True)
     state_path = os.path.join(state_dir, f"draft_{a.draft_id}.json")
+    event_path = os.path.join(state_dir, f"draft_{a.draft_id}_last.json")
+    uid = str(cfg.get("user_id", ""))
+
+    def emit_loop(rep):
+        """Full report to disk, headline to stdout (Monitor truncates long lines)."""
+        with open(event_path, "w") as f:
+            json.dump(rep, f, indent=1, ensure_ascii=False)
+        emit(compact_report(rep, uid, event_path), compact=True)
     try:
         with open(state_path) as f:
             prev = json.load(f)
@@ -288,7 +352,7 @@ def main():
             if changed or a.baseline:
                 a.baseline = False
                 save(picks, draft, rep)
-                emit(rep, compact=True)
+                emit_loop(rep)
                 if rep["draft_complete"]:
                     sys.exit(0)
         elif a.baseline or changed or time.time() >= deadline:

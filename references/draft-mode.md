@@ -17,7 +17,7 @@
      persistent: true, timeout_ms: 3600000
    })
    ```
-   Each stdout line is one JSON event (new picks, status change, user on the clock, or `{"error":…}` after 3 failed fetches). `--baseline` emits the current state immediately so you can confirm the watcher is alive. The process exits by itself when the draft completes. If a Monitor is unavailable, fall back to calling `watch_draft.py <draft_id> [--mock]` (one-shot) in a chain — **and never end your turn while status is `drafting`**; end-of-turn with no watcher armed is how picks get missed.
+   Each stdout line is one short JSON event (new picks, status change, user on the clock, or `{"error":…}` after 3 failed fetches). Monitor notifications truncate at roughly 500 characters, so the line is a headline only: `new_picks` as `"74 Brian Thomas WR"` strings (`*` marks the user's own pick), the on-clock fields, and — when the board is attached — `roster`, `runs`, `top` (6 names) and `event_file`, the path of the full report (`~/sleepy/state/draft_<id>_last.json`). If the notification still looks cut off, or you need TE/K/DEF or more than 6 names, read `event_file` once — never `board.py`. `--baseline` emits the current state immediately so you can confirm the watcher is alive. The process exits by itself when the draft completes. If a Monitor is unavailable, fall back to calling `watch_draft.py <draft_id> [--mock]` (one-shot) in a chain — **and never end your turn while status is `drafting`**; end-of-turn with no watcher armed is how picks get missed.
 7. **Mock timer.** If the user created the mock, suggest a 90–120s pick timer. The rehearsal is for the loop and the strategy, not for beating a 60s CPU sprint.
 8. Confirm ready state in 2–3 lines: draft, slot, watcher armed (quote the baseline event's `total_picks_made`), plan headline — e.g. "Slot 6, watcher live at 0 picks, plan: RB/WR at 6 & 15, QB at 46 if ≥2 top-6 remain."
 
@@ -25,13 +25,13 @@
 
 ## The event handler
 
-Every Monitor event (or one-shot result) is a JSON report. When `picks_until_user ≤ 3` or `on_clock` is true it already contains `board` — roster, position counts, last 5, `position_runs`, top-N available with injury tags. **Do not call `board.py` separately**; that is a wasted round trip against the clock.
+Every Monitor event (or one-shot result) is a JSON report. When `picks_until_user ≤ 3` or `on_clock` is true it already carries the board headline, and `event_file` holds the full board — roster, position counts, last 5, `position_runs`, top-N available with injury tags, and `by_position` (best 4 QB / 6 RB / 6 WR / 4 TE / 3 K / 3 DEF). **Do not call `board.py` separately**; one `cat` of `event_file` is the only extra round trip allowed on the clock (mock #6: five `board.py` calls just to find the TE and K tiers).
 
 React per the interrupt rules, then end the turn — the Monitor will wake you again:
 
 - **`on_clock` true → one line, immediately.** You already posted the shortlist for this pick at the user's *previous* pick (see below). Confirm it: "Still #1: X — take him. (Y gone → Z is #2.)" Post to Discord with `notify.sh` in the same breath. Only re-rank if a listed player was taken or a strategy trigger changed.
 - **`picks_until_user` ≤ 3 → ranked shortlist** (format below), Discord first, then terminal.
-- **User just picked (their `pick_no` in `new_picks`) → pre-stage the *next* pick now.** Post a 3-deep shortlist for the user's next pick number ("At 46: Maye if there, else Irving, else McConkey"). In mocks the next on-clock event can arrive within seconds; in real drafts this buys the user a full round of thinking time. This is the primary shortlist, not a courtesy.
+- **User just picked (their `pick_no` in `new_picks`) → pre-stage the *next* pick now.** Post a 3-deep shortlist for the user's next pick number ("At 46: Maye if there, else Irving, else McConkey"). In mocks the next on-clock event can arrive within seconds; in real drafts this buys the user a full round of thinking time. This is the primary shortlist, not a courtesy. The event at the user's own pick has no board (they're 9 out), so pre-stage from the previous board plus what just went — don't wait for the ≤3 event. This includes the K/DEF rounds: in mock #6 picks 146 and 155 landed with no shortlist because the 6-out event was the last one before the clock; queue the DEF and K at the user's rd-14 pick.
 - A strategy-file target/fade was just picked → one-line note ("Puka sniped at 18 — pivot options: …").
 - `position_runs` non-empty and it threatens the plan → short warning with the adjustment.
 - A player falling ≥1.5 rounds past the strategy file's stated value → flag once.
