@@ -10,6 +10,7 @@ Run this when the user asks to onboard, when `~/sleepy/config.json` is missing, 
 4. Discover leagues via `/user/<user_id>/leagues/nfl/<season>`; confirm which to manage; for each, find its draft via `/league/<league_id>/drafts` and record league_id, draft_id, slot (from `.draft_order` once posted), a short slug for filenames.
 5. Write `~/sleepy/config.json` per `assets/config.template.json`.
 6. Run `scripts/cache_players.sh`.
+7. Copy `assets/def_ranks.json` to `~/sleepy/def_ranks.json` and ask the user to reorder it (or do it from their rankings doc) — Sleeper has no DEF rankings, so this list is the only thing ordering team defenses on the draft board.
 
 ## 2. Per-league strategy interview → `strategy/<slug>.md`
 

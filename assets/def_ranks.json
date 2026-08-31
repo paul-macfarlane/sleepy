@@ -1,0 +1,10 @@
+{
+  "_comment": "Team DEF/ST ranking, best first. Sleeper's /players/nfl dump gives team defenses no search_rank, so Sleepy ranks them from this list instead (rank 1 = first entry). Copy this file to ~/sleepy/def_ranks.json and reorder it to taste before draft day — that copy wins when present. Teams missing from the list sort last, alphabetically. The default order below is a generic preseason consensus placeholder, not a projection — edit it.",
+  "updated": "2026-08-30",
+  "order": [
+    "DEN", "PHI", "BAL", "PIT", "HOU", "MIN", "SEA", "LAR",
+    "SF", "DET", "BUF", "KC", "GB", "LAC", "CHI", "NYJ",
+    "CIN", "TB", "DAL", "ARI", "IND", "NE", "WAS", "ATL",
+    "JAX", "MIA", "CLE", "LV", "NYG", "CAR", "NO", "TEN"
+  ]
+}

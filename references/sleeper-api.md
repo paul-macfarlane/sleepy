@@ -45,7 +45,7 @@ Not supported. If `.type == "auction"`, say so and offer conversational advice w
 
 ## Player dump tips
 
-`cache/players.json` is keyed by player_id. Useful fields: `full_name` (`first_name`/`last_name`), `position`, `team`, `age`, `active`, `search_rank` (the board sorts on it; team DEFs have none), `injury_status`, `injury_body_part`, `injury_notes`, `years_exp`, `depth_chart_order`. Don't load the whole file into context — grep/jq for the players you need:
+`cache/players.json` is keyed by player_id. Useful fields: `full_name` (`first_name`/`last_name`), `position`, `team`, `age`, `active`, `search_rank` (the board sorts on it; team DEFs have none — they're ordered by `~/sleepy/def_ranks.json` / `assets/def_ranks.json` instead), `injury_status`, `injury_body_part`, `injury_notes`, `years_exp`, `depth_chart_order`. Don't load the whole file into context — grep/jq for the players you need:
 
 ```bash
 jq -r '.["4046"] | "\(.full_name) \(.position) \(.team) \(.injury_status)"' ~/sleepy/cache/players.json
