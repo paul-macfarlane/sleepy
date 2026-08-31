@@ -8,6 +8,7 @@
 2. `scripts/sleeper.sh /draft/<draft_id>` — confirm status, type, teams, rounds, `pick_timer`, and the user's slot. Auction → not supported (see sleeper-api.md). `reversal_round` set → warn and degrade gracefully.
 3. Ensure `cache/players.json` is fresh (≤7 days); refresh if not.
 4. If keepers exist, mark kept players as off-board before pick 1.
+5. **DEF order.** Sleeper ranks no team defenses, so the board orders them from `~/sleepy/def_ranks.json` (falling back to the skill's `assets/def_ranks.json`, a generic placeholder). If the user has DEF opinions, copy the asset to `~/sleepy/def_ranks.json` and reorder it now — a DEF's `rank` in every board is just its position in that list.
 5. **Model check.** Live drafts need sustained multi-step reasoning under a clock; confirm the session is on Fable or Opus (`/model`). Sonnet has dropped the loop in a live mock — it works, but warn the user and lean harder on the Monitor (step 6) and queue instruction.
 6. **Arm the watcher.** Draft mode is a background process that wakes you, never a loop you promise to keep running yourself:
    ```

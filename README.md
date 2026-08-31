@@ -54,6 +54,7 @@ Draft mode arms a background watcher through Claude Code's `Monitor` tool, so Sl
 
 ## Changelog
 
+- **v0.3** (2026-08-30) — Team defenses are now ranked (Sleeper's player dump has no DEF rank, so the board previously listed them alphabetically as "rank 0"): order comes from `~/sleepy/def_ranks.json` if present, else `assets/def_ranks.json`; onboarding and draft preflight tell you to reorder it.
 - **v0.2** (2026-08-28) — Monitor-driven draft watcher (`watch_draft.py --loop`) with compact per-event lines and a full-report event file; by-position board incl. TE/K/DEF; pre-staged shortlists and queue instruction; docs stripped of user-specific data.
 - **v0.1** (2026-08-24) — Initial release: onboarding, draft/mock mode, season-mode cron tasks, Discord notifications.
 

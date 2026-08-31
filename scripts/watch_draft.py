@@ -32,7 +32,9 @@ counts league-wide, the last 5 picks, position-run flags, the top --top
 available skill players with injury tags, and "by_position" — the best few
 at every position including TE, K and DEF, which a rank-sorted top-N hides
 (so TE/K/DEF never need a separate board.py call). One call, one
-round trip, no need to run board.py separately.
+round trip, no need to run board.py separately. Team DEFs have no Sleeper
+search_rank; they are ordered by ~/sleepy/def_ranks.json (user override) or
+assets/def_ranks.json, and their "rank" is the position in that list.
 
 Polling: 15s (floor 10) while live in a real draft; 5s with --mock (CPU picks
 land instantly); 5s whenever the user is within --near-picks; 30s while
@@ -54,7 +56,13 @@ if not os.environ.get("SSL_CERT_FILE"):
 
 BASE = "https://api.sleeper.app/v1"
 SLEEPY_HOME = os.environ.get("SLEEPY_HOME", os.path.expanduser("~/sleepy"))
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL_POS = ("QB", "RB", "WR", "TE")
+# Sleeper gives team defenses no search_rank, so DEFs are ranked from an ordered
+# team list: ~/sleepy/def_ranks.json if the user made one, else assets/def_ranks.json.
+DEF_RANK_FILES = (os.path.join(SLEEPY_HOME, "def_ranks.json"),
+                  os.path.join(SKILL_DIR, "assets", "def_ranks.json"))
+DEF_UNRANKED = 99  # teams missing from the list sort last (then alphabetical)
 # Best-N per position always shipped with the board, so TE/K/DEF are visible
 # even when the rank-sorted top list is all RB/WR/QB.
 BY_POSITION_N = {"QB": 4, "RB": 6, "WR": 6, "TE": 4, "K": 3, "DEF": 3}
@@ -87,6 +95,32 @@ def load_players():
         except OSError:
             _players = {}
     return _players
+
+
+_def_ranks = None
+
+
+def load_def_ranks():
+    """{team: rank} from the first readable DEF_RANK_FILES entry; {} if none (all DEFs unranked)."""
+    global _def_ranks
+    if _def_ranks is None:
+        _def_ranks = {}
+        for path in DEF_RANK_FILES:
+            try:
+                with open(path) as f:
+                    order = json.load(f).get("order") or []
+            except (OSError, ValueError, AttributeError):
+                continue
+            _def_ranks = {str(t).upper(): i + 1 for i, t in enumerate(order)}
+            break
+    return _def_ranks
+
+
+def rank_of(p):
+    """Sort key / display rank: Sleeper search_rank for players, def_ranks position for team DEFs."""
+    if p.get("position") == "DEF":
+        return load_def_ranks().get((p.get("team") or "").upper(), DEF_UNRANKED)
+    return p.get("search_rank") or 0
 
 
 def user_slot(draft, cfg, draft_id, cli_slot):
@@ -150,7 +184,7 @@ def injury(p):
 def avail_entry(p):
     name = p.get("last_name") if p.get("position") == "DEF" else f"{p.get('first_name', '')} {p.get('last_name', '')}".strip()
     return {
-        "rank": p.get("search_rank") or 0,
+        "rank": rank_of(p),
         "player": name,
         "position": p["position"],
         "team": p["team"],
@@ -160,8 +194,9 @@ def avail_entry(p):
 
 
 def available(players, gone, positions):
-    """Active, rostered, undrafted players at these positions, best search_rank first.
-    Sleeper gives team DEFs no search_rank — they pass through unranked (rank 0), alphabetical."""
+    """Active, rostered, undrafted players at these positions, best rank first.
+    Players sort by Sleeper search_rank; team DEFs (no search_rank in the dump) sort by
+    def_ranks.json order — see load_def_ranks — so DEF rank 1 means "first in that list"."""
     def ranked(p):
         if p.get("position") == "DEF":
             return True
@@ -171,7 +206,7 @@ def available(players, gone, positions):
         if p.get("active") and ranked(p)
         and p.get("position") in positions and p.get("team") and p.get("player_id") not in gone
     ]
-    avail.sort(key=lambda p: (p.get("search_rank") or 0, p.get("last_name") or ""))
+    avail.sort(key=lambda p: (rank_of(p), p.get("last_name") or ""))
     return avail
 
 
