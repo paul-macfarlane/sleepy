@@ -26,6 +26,14 @@ Onboarding resolves your Sleeper user ID, discovers your leagues, sets up your D
 
 ## Use
 
+**Start every session from `~/sleepy`:**
+
+```bash
+cd ~/sleepy && claude
+```
+
+That's where your config, strategy files, and draft state live, so anything Sleepy reads or writes lands in the right place, and Claude Code's per-project memory and permission settings accumulate in one spot. Don't launch from the skill folder itself (`~/.claude/skills/sleepy`, or a dev clone of this repo): the skill's own rule is never to change its tooling during a live draft, and keeping the source out of the working directory makes that the default. If you develop Sleepy, keep a separate clone for that and update the installed skill with `git -C ~/.claude/skills/sleepy pull` after merging.
+
 **Test on a mock first:** join a Sleeper mock draft, then:
 
 ```

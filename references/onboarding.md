@@ -38,6 +38,10 @@ Capture what the API can't provide:
 
 Don't demand completeness upfront. Capture what the user knows now; when a missing rule becomes decision-relevant later ("keeper costs matter for this pick and I don't have the formula"), ask then and append the answer.
 
+## 4. Wrap-up
+
+Tell the user to start future sessions from `~/sleepy` (`cd ~/sleepy && claude`): that keeps Sleepy's reads and writes, Claude Code's per-project memory, and any permission rules in one place, and keeps the skill's source out of the working directory. If the current session was launched from the skill folder or a clone of the repo, say so and suggest switching. Then point them at a mock draft as the first real test (`references/draft-mode.md`).
+
 ## File format
 
 Both file types start with YAML frontmatter (`league_id`, `slug`, `updated`) then freeform markdown with `##` sections matching the interview topics. Keep them concise enough to load whole into context during a draft.
