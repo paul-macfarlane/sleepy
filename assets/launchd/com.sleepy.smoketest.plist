@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- One-off plumbing test used by `install.sh --test`: loaded, kickstarted once, removed. No schedule. -->
+    <key>Label</key>
+    <string>com.sleepy.smoketest</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__WRAPPER__</string>
+        <string>launchd smoke test — do NOT run any waiver or lineup analysis. Just run scripts/notify.sh (in the sleepy skill) with the exact message "Sleepy launchd smoke test ✅ scheduled runs are wired up" and then reply with the single word DONE.</string>
+        <string>smoketest</string>
+    </array>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>__LOGDIR__/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>__LOGDIR__/launchd.log</string>
+</dict>
+</plist>
