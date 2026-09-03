@@ -36,9 +36,9 @@ round trip, no need to run board.py separately. Team DEFs have no Sleeper
 search_rank; they are ordered by ~/sleepy/def_ranks.json (user override) or
 assets/def_ranks.json, and their "rank" is the position in that list.
 
-Polling: 15s (floor 10) while live in a real draft; 5s with --mock (CPU picks
+Polling: 15s (floor 10) while live in a real draft; 5s with --mock, even while pre_draft (CPU picks
 land instantly); 5s whenever the user is within --near-picks; 30s while
-pre_draft or paused. --baseline prints the current state immediately.
+pre_draft or paused in real drafts. --baseline prints the current state immediately.
 
 The user's slot comes from --slot, else config.json leagues[] matching this
 draft_id, else the draft's draft_order + config user_id.
@@ -324,7 +324,7 @@ def main():
     a = ap.parse_args()
     interval = 5 if a.mock else max(10, a.interval)
     fast = max(5, a.fast_interval)
-    IDLE_INTERVAL = 30  # pre_draft / paused: nothing moves fast, be polite
+    IDLE_INTERVAL = 5 if a.mock else 30  # pre_draft / paused: mocks go live with instant CPU picks, so stay quick; real drafts can be polite
 
     cfg = load_config()
     state_dir = os.path.join(SLEEPY_HOME, "state")
