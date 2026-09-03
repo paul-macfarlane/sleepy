@@ -40,12 +40,20 @@ Onboarding resolves your Sleeper user ID, discovers your leagues, sets up your D
 
 Draft mode arms a background watcher through Claude Code's `Monitor` tool, so Sleepy is woken by picks rather than polling by hand. Use a top-tier model (Fable/Opus via `/model`) for live drafts — smaller models have dropped the loop under a clock. Say "stepping away" to route on-the-clock alerts to Discord. If the session dies, `Sleepy: resume draft <draft_id>` rebuilds everything from the API.
 
-**Season:** install the cron entries (Sleepy will generate them — see `assets/crontab.example`) for Tuesday waiver reports and Thursday/Sunday lineup checks, each posting a summary to Discord. Or just open a session and ask about trades, start/sits, anything.
+**Season:** schedule Tuesday waiver reports and Thursday/Sunday lineup checks, each posting a summary to Discord. On a Mac:
+
+```bash
+~/.claude/skills/sleepy/assets/launchd/install.sh --test
+```
+
+That loads three launchd agents (local time, so no daylight-saving drift) and fires a smoke test that should land in your Discord within a minute or two. Edit the plist templates in `assets/launchd/` to change times and re-run the installer; `--uninstall` removes them. On Linux, use `assets/crontab.example`. Both paths go through `scripts/scheduled_run.sh`, which runs Claude headless with permission prompts off — a bare `claude -p` silently denies every tool call when nobody is there to approve it — and posts a Discord alert if a run crashes. A run missed while the Mac was asleep fires when it wakes; one missed while it was shut down is skipped.
+
+Or just open a session and ask about trades, start/sits, anything.
 
 ## Etiquette & limits
 
 - Sleeper's API is public and unofficial: Sleepy polls every 15s during a live draft (5s for CPU mocks, which pick instantly, and 5s whenever you are within 3 picks of the clock) and 30s while idle — far under the platform limit. Be a good citizen.
-- Draft sessions and cron runs draw from your Claude subscription usage. Draft day is the heavy session — budget for it.
+- Draft sessions and scheduled runs draw from your Claude subscription usage. Draft day is the heavy session — budget for it.
 - Not supported: auction drafts, third-round-reversal snake math (Sleepy warns and degrades gracefully). English-language NFL leagues only.
 
 ## Privacy
@@ -54,6 +62,7 @@ Draft mode arms a background watcher through Claude Code's `Monitor` tool, so Sl
 
 ## Changelog
 
+- **v0.4** (2026-09-02) — Scheduled runs that actually run: `scripts/scheduled_run.sh` wraps the headless `claude -p` call with the permission bypass it needs unattended (the old crontab example silently denied every tool call and never posted), fixes PATH, and posts a Discord alert on crash. launchd is the macOS default (`assets/launchd/install.sh`, with `--test` smoke test and `--uninstall`); cron example rewritten for Linux. Mock drafts poll at 5s even before the draft starts, and shortlists pre-stage both picks of a snake turn.
 - **v0.3** (2026-08-30) — Team defenses are now ranked (Sleeper's player dump has no DEF rank, so the board previously listed them alphabetically as "rank 0"): order comes from `~/sleepy/def_ranks.json` if present, else `assets/def_ranks.json`; onboarding and draft preflight tell you to reorder it.
 - **v0.2** (2026-08-28) — Monitor-driven draft watcher (`watch_draft.py --loop`) with compact per-event lines and a full-report event file; by-position board incl. TE/K/DEF; pre-staged shortlists and queue instruction; docs stripped of user-specific data.
 - **v0.1** (2026-08-24) — Initial release: onboarding, draft/mock mode, season-mode cron tasks, Discord notifications.

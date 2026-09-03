@@ -1,6 +1,12 @@
-# Sleepy season-mode schedule (adjust times to your timezone)
-0 8  * * 2 claude -p "Sleepy: Tuesday waiver report"  >> ~/sleepy/logs/waivers.log 2>&1
-0 17 * * 4 claude -p "Sleepy: Thursday lineup check"  >> ~/sleepy/logs/lineups.log 2>&1
-0 11 * * 0 claude -p "Sleepy: Sunday lineup check"    >> ~/sleepy/logs/lineups.log 2>&1
+# Sleepy season-mode schedule for cron (Linux). macOS users: use assets/launchd/install.sh instead.
+#
+# Every entry goes through scripts/scheduled_run.sh rather than a bare `claude -p`:
+# an unattended `claude -p` auto-denies every tool call and produces nothing.
+# The wrapper sets PATH, grants Sleepy its tools, logs to ~/sleepy/logs/<name>.log,
+# and posts a Discord alert if the run crashes.
+# Times are the system's local time — adjust to your timezone.
+0 8  * * 2 ~/.claude/skills/sleepy/scripts/scheduled_run.sh "Tuesday waiver report" waivers
+0 17 * * 4 ~/.claude/skills/sleepy/scripts/scheduled_run.sh "Thursday lineup check" lineups
+0 11 * * 0 ~/.claude/skills/sleepy/scripts/scheduled_run.sh "Sunday lineup check"   lineups
 # Optional Monday recap:
-# 0 9 * * 1 claude -p "Sleepy: weekly recap"          >> ~/sleepy/logs/recap.log  2>&1
+# 0 9 * * 1 ~/.claude/skills/sleepy/scripts/scheduled_run.sh "weekly recap" recap

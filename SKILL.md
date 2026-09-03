@@ -26,7 +26,7 @@ All user data lives in `~/sleepy/` (never inside this skill directory — the sk
 ├── notes/<league>.md     # per-league rules the API lacks (keepers, payouts, house rules)
 ├── cache/players.json    # cached /players/nfl dump (refresh if >7 days old)
 ├── state/                # draft watcher state + draft_<id>_last.json event files
-├── logs/                 # cron output + advice log
+├── logs/                 # scheduled-run output (one file per task)
 └── advice-log.md         # running record: advice given, what happened
 ```
 
@@ -41,6 +41,7 @@ Base `https://api.sleeper.app/v1`, public, read-only, no auth. Poll every 15s du
 - `scripts/watch_draft.py <draft_id> --loop [--mock]` — the draft-mode primitive. Runs until the draft completes, printing one short JSON line per state change (new picks, status, user on the clock, fetch errors); when the user is ≤3 picks out the line carries the board headline (roster, runs, top 6) and `event_file` points at the full report — whole board, best-by-position incl. TE/K/DEF — in `~/sleepy/state/draft_<id>_last.json`. Arm it with the `Monitor` tool so events wake you — never poll by hand. Without `--loop` it's one-shot (blocks for one change, then exits); `--baseline` prints the current state immediately.
 - `scripts/board.py <draft_id> [N] [slot] [--pos TE,K,DEF] [--max-age 25]` — human-readable board for ad-hoc questions (per-position and age filters for TE/K/DEF tiers and rd-9+ keeper scans); the same data ships in the event file, so don't call it on the clock.
 - `scripts/notify.sh "<message>"` — post to the user's Discord webhook
+- `scripts/scheduled_run.sh "<task>" <logname>` — what launchd/cron call for season-mode runs; never schedule a bare `claude -p` (see `references/season-mode.md`)
 
 ## Modes
 
@@ -51,7 +52,7 @@ Route by intent; read the matching reference before first use in a session:
 | "onboard me", new league, no strategy file exists | Onboarding interviews | `references/onboarding.md` |
 | "draft mode", "mock draft", a draft ID | Live draft loop | `references/draft-mode.md` |
 | "resume draft" after a crash | Draft recovery (state rebuilds from the picks endpoint) | `references/draft-mode.md` |
-| Waivers, lineups, trades, weekly checks, cron setup | Season tasks | `references/season-mode.md` |
+| Waivers, lineups, trades, weekly checks, scheduling (launchd/cron) | Season tasks | `references/season-mode.md` |
 | "publish", "share the skill" | Publishing checklist | `references/publishing.md` |
 
 **Mock drafts** are the same loop as real drafts (mocks have normal draft IDs). Two differences: a mock may have no league attached — fall back to the draft's own settings plus whichever real league the user says to simulate — and every mock ends with a debrief: how the board behaved, where the strategy held or broke, and proposed edits to the strategy file (apply only with the user's sign-off).
@@ -62,4 +63,4 @@ Use `scripts/notify.sh` for every draft shortlist (≤3 picks out / on the clock
 
 ## Usage discipline
 
-Draft sessions and cron runs share the user's Claude subscription usage pool. Keep polling handled by scripts (cheap) and reserve your reasoning for state changes. In season mode, one focused pass per task — don't re-fetch data you already have in context.
+Draft sessions and scheduled runs share the user's Claude subscription usage pool. Keep polling handled by scripts (cheap) and reserve your reasoning for state changes. In season mode, one focused pass per task — don't re-fetch data you already have in context.

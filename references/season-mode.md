@@ -1,6 +1,6 @@
 # Season mode
 
-Two entry points: scheduled headless runs (`claude -p "Sleepy: <task>"` via cron) and on-demand conversation. Every scheduled run ends with a Discord post via `scripts/notify.sh` — a run that produces no post is a failed run (post "nothing actionable" if that's the finding). Resolve the current week from `/state/nfl`.
+Two entry points: scheduled headless runs (`scripts/scheduled_run.sh` via launchd or cron — see Scheduling below) and on-demand conversation. Every scheduled run ends with a Discord post via `scripts/notify.sh` — a run that produces no post is a failed run (post "nothing actionable" if that's the finding). Resolve the current week from `/state/nfl`.
 
 ## Tuesday waiver report
 
@@ -29,6 +29,11 @@ When the user brings an offer: fetch both rosters, evaluate against (a) position
 
 Results, standings movement, next week's early flags (byes, injuries to monitor Wednesday). Keep it short; append notable advice-vs-outcome entries to `advice-log.md` — this file is the feedback loop for improving the strategy files and interrupt thresholds.
 
-## Cron setup
+## Scheduling
 
-Generate entries for the user (see `assets/crontab.example`), adjusting times to their timezone and confirming before they install. Logs append to `~/sleepy/logs/`. Remind the user these runs draw from their subscription usage pool.
+Every scheduled run goes through `scripts/scheduled_run.sh "<task>" <logname>`, never a bare `claude -p`. An unattended `claude -p` auto-denies every tool call, so the run ends with no Discord post and no error — exactly the silent failure this skill forbids. The wrapper sets PATH (launchd and cron start with almost none), runs `claude -p "Sleepy: <task>"` from `$SLEEPY_HOME` with permission prompts off, appends to `logs/<logname>.log`, and posts a Discord alert if claude exits non-zero. Turning prompts off is acceptable here because Sleepy only reads the public Sleeper API and writes to Discord and `~/sleepy/`.
+
+- **macOS (default): launchd.** `assets/launchd/install.sh` renders the three plist templates for this machine and loads them; `--test` also fires a one-off smoke test that posts to Discord; `--uninstall` removes them. Schedules are local time (no DST drift). A job missed while the Mac was asleep runs at wake; one missed while it was shut down is skipped, so warn the user about Sunday mornings if the laptop may stay closed.
+- **Linux: cron.** `assets/crontab.example`, adjusted to the user's timezone.
+
+Before installing, confirm the times with the user and remind them the runs draw from their subscription usage pool. If they have Sleepy entries in an old crontab, remove them so runs don't double-post (`install.sh` warns about this).

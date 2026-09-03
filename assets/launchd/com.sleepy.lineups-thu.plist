@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Template: install.sh fills __WRAPPER__ and __LOGDIR__ for this machine. -->
+    <key>Label</key>
+    <string>com.sleepy.lineups-thu</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__WRAPPER__</string>
+        <string>Thursday lineup check</string>
+        <string>lineups</string>
+    </array>
+    <!-- Thursday 17:00 local time, ahead of Thursday Night Football. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>4</integer>
+        <key>Hour</key>
+        <integer>17</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>__LOGDIR__/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>__LOGDIR__/launchd.log</string>
+</dict>
+</plist>
