@@ -66,7 +66,8 @@ case "$PROVIDER" in
     }
     # Scheduled analysis only needs the Sleepy data workspace plus outbound
     # access to the public Sleeper API and web sources. Keep Codex sandboxed.
-    args=(exec --skip-git-repo-check --sandbox workspace-write --ask-for-approval never
+    # Approval and live-search options belong to the top-level CLI, before exec.
+    args=(--ask-for-approval never --search exec --skip-git-repo-check --sandbox workspace-write
           -c sandbox_workspace_write.network_access=true)
     [ -z "$MODEL" ] || args+=(--model "$MODEL")
     args+=("$PROMPT")

@@ -61,6 +61,8 @@ if [ "${1:-}" = "--test" ]; then
   else
     echo "Smoke test did not finish cleanly — check $LOGDIR/smoketest.log and $LOGDIR/launchd.log:"
     tail -20 "$LOGDIR/smoketest.log" 2>/dev/null || true
+    unload smoketest
+    exit 1
   fi
   unload smoketest
 fi

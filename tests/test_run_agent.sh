@@ -38,10 +38,12 @@ env -u SLEEPY_AGENT -u SLEEPY_AGENT_MODEL "$REPO_DIR/scripts/run_agent.sh" "Slee
 head -1 "$SLEEPY_TEST_OUTPUT" | rg -q '/codex$' || fail "config did not choose Codex"
 assert_line "exec"
 assert_line "--skip-git-repo-check"
-assert_line "--sandbox"
-assert_line "workspace-write"
 assert_line "--ask-for-approval"
 assert_line "never"
+assert_line "--search"
+assert_line "--sandbox"
+assert_line "workspace-write"
+test "$(sed -n '2,5p' "$SLEEPY_TEST_OUTPUT")" = "$(printf '%s\n' --ask-for-approval never --search exec)" || fail "global options must precede exec"
 assert_line "sandbox_workspace_write.network_access=true"
 assert_line "--model"
 assert_line "gpt-test"
@@ -63,5 +65,15 @@ SLEEPY_AGENT_RUNNER="$TEST_TMP/bin/custom-agent" SLEEPY_EXTRA_PATH="$TEST_TMP/bi
   "$REPO_DIR/scripts/scheduled_run.sh" "scheduled test" scheduled-test
 assert_line "Sleepy: scheduled test"
 rg -q -- '----- exit 0' "$SLEEPY_HOME/logs/scheduled-test.log" || fail "scheduled run did not finish cleanly"
+
+# Failure must reach launchd as nonzero even if notifying also fails. The
+# fixture config has no webhook, so this check cannot send a real message.
+status=0
+SLEEPY_TEST_EXIT=23 SLEEPY_AGENT_RUNNER="$TEST_TMP/bin/custom-agent" \
+  SLEEPY_EXTRA_PATH="$TEST_TMP/bin" \
+  "$REPO_DIR/scripts/scheduled_run.sh" "failure test" failure-test || status=$?
+[ "$status" = 23 ] || fail "scheduled wrapper lost the agent's exit status"
+rg -q -- '----- exit 23' "$SLEEPY_HOME/logs/failure-test.log" || fail "failure was not logged"
+rg -q 'notify.sh also failed' "$SLEEPY_HOME/logs/failure-test.log" || fail "notification failure was not logged"
 
 echo "run_agent tests passed"
