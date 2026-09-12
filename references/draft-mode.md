@@ -9,16 +9,20 @@
 3. Ensure `cache/players.json` is fresh (≤7 days); refresh if not.
 4. If keepers exist, mark kept players as off-board before pick 1.
 5. **DEF order.** Sleeper ranks no team defenses, so the board orders them from `~/sleepy/def_ranks.json` (falling back to the skill's `assets/def_ranks.json`, a generic placeholder). If the user has DEF opinions, copy the asset to `~/sleepy/def_ranks.json` and reorder it now — a DEF's `rank` in every board is just its position in that list.
-5. **Model check.** Live drafts need sustained multi-step reasoning under a clock; confirm the session is on Fable or Opus (`/model`). Sonnet has dropped the loop in a live mock — it works, but warn the user and lean harder on the Monitor (step 6) and queue instruction.
-6. **Arm the watcher.** Draft mode is a background process that wakes you, never a loop you promise to keep running yourself:
+5. **Model check.** Live drafts need sustained multi-step reasoning under a clock; confirm the session is using a strong reasoning model. If the selected model is optimized primarily for speed or economy, warn the user and lean harder on the watcher (step 6) and queue instruction.
+6. **Arm the watcher.** First inspect the tools available in this agent session.
+
+   If there is a persistent background-command tool whose later stdout is delivered back into the conversation, use it to run:
+
    ```
-   Monitor({
-     command: "python3 <skill>/scripts/watch_draft.py <draft_id> --loop [--mock] --baseline",
-     description: "Sleeper draft <draft_id> — picks / on-clock",
-     persistent: true, timeout_ms: 3600000
-   })
+   python3 <skill>/scripts/watch_draft.py <draft_id> --loop [--mock] --baseline
    ```
-   Each stdout line is one short JSON event (new picks, status change, user on the clock, or `{"error":…}` after 3 failed fetches). Monitor notifications truncate at roughly 500 characters, so the line is a headline only: `new_picks` as `"74 Brian Thomas WR"` strings (`*` marks the user's own pick), the on-clock fields, and — when the board is attached — `roster`, `runs`, `top` (6 names) and `event_file`, the path of the full report (`~/sleepy/state/draft_<id>_last.json`). If the notification still looks cut off, or you need TE/K/DEF or more than 6 names, read `event_file` once — never `board.py`. `--baseline` emits the current state immediately so you can confirm the watcher is alive. The process exits by itself when the draft completes. If a Monitor is unavailable, fall back to calling `watch_draft.py <draft_id> [--mock]` (one-shot) in a chain — **and never end your turn while status is `drafting`**; end-of-turn with no watcher armed is how picks get missed.
+
+   Configure the tool as persistent with a one-hour timeout and a useful label such as `Sleeper draft <draft_id> — picks / on-clock`. Tool names and schemas differ between Claude Code, Codex, and other agents; use the capability, not a particular tool name.
+
+   Each stdout line is one short JSON event (new picks, status change, user on the clock, or `{"error":…}` after 3 failed fetches). Background notifications may truncate long output, so the line is a headline only: `new_picks` as `"74 Brian Thomas WR"` strings (`*` marks the user's own pick), the on-clock fields, and — when the board is attached — `roster`, `runs`, `top` (6 names) and `event_file`, the path of the full report (`~/sleepy/state/draft_<id>_last.json`). If the notification looks cut off, or you need TE/K/DEF or more than 6 names, read `event_file` once — never `board.py`. `--baseline` emits the current state immediately so you can confirm the watcher is alive. The process exits by itself when the draft completes.
+
+   A background shell process is **not** sufficient if its output cannot re-enter the conversation after the turn ends. When no suitable persistent facility exists, call `watch_draft.py <draft_id> [--mock]` in one-shot mode, handle the returned event, and call it again. **Never end your turn while status is `drafting` unless a watcher is confirmed to wake the session**; ending with only a detached process is how picks get missed.
 7. **Mock timer.** If the user created the mock, suggest a 90–120s pick timer. The rehearsal is for the loop and the strategy, not for beating a 60s CPU sprint.
 8. Confirm ready state in 2–3 lines: draft, slot, watcher armed (quote the baseline event's `total_picks_made`), plan headline — e.g. "Slot 4, watcher live at 0 picks, plan: best RB/WR through rd 3, QB in rd 5–6 if a top-tier one is there."
 
@@ -26,9 +30,9 @@
 
 ## The event handler
 
-Every Monitor event (or one-shot result) is a JSON report. When `picks_until_user ≤ 3` or `on_clock` is true it already carries the board headline, and `event_file` holds the full board — roster, position counts, last 5, `position_runs`, top-N available with injury tags, and `by_position` (best 4 QB / 6 RB / 6 WR / 4 TE / 3 K / 3 DEF). **Do not call `board.py` separately**; one `cat` of `event_file` is the only extra round trip allowed on the clock (a rank-sorted top-N is all RB/WR/QB — `by_position` exists so TE/K/DEF never need a separate call).
+Every watcher event (or one-shot result) is a JSON report. When `picks_until_user ≤ 3` or `on_clock` is true it already carries the board headline, and `event_file` holds the full board — roster, position counts, last 5, `position_runs`, top-N available with injury tags, and `by_position` (best 4 QB / 6 RB / 6 WR / 4 TE / 3 K / 3 DEF). **Do not call `board.py` separately**; one read of `event_file` is the only extra round trip allowed on the clock (a rank-sorted top-N is all RB/WR/QB — `by_position` exists so TE/K/DEF never need a separate call).
 
-React per the interrupt rules, then end the turn — the Monitor will wake you again:
+React per the interrupt rules, then yield to the armed watcher or make the next one-shot call:
 
 - **`on_clock` true → one line, immediately.** You already posted the shortlist for this pick at the user's *previous* pick (see below). Confirm it: "Still #1: X — take him. (Y gone → Z is #2.)" Post to Discord with `notify.sh` in the same breath. Only re-rank if a listed player was taken or a strategy trigger changed.
 - **`picks_until_user` ≤ 3 → ranked shortlist** (format below), Discord first, then terminal.
@@ -37,7 +41,7 @@ React per the interrupt rules, then end the turn — the Monitor will wake you a
 - `position_runs` non-empty and it threatens the plan → short warning with the adjustment.
 - A player falling ≥1.5 rounds past the strategy file's stated value → flag once.
 - `{"error": …}` event → `scripts/notify.sh "⚠️ Sleepy: draft polling failing — check the terminal"` and tell the user what failed. The loop keeps retrying on its own.
-- Otherwise: say nothing and end the turn. Silence is a feature *only* because the Monitor is armed.
+- Otherwise: say nothing. End the turn only when a persistent watcher is confirmed to wake the session; in one-shot mode, immediately wait for the next event.
 
 If the user typed a question between events, answer with full board context.
 
@@ -79,7 +83,7 @@ Same loop. Differences:
 
 All draft state is reconstructable from the API — nothing is lost when a session dies. On "resume draft <draft_id>" (or if you detect a draft mid-flight during preflight):
 
-1. Re-run preflight steps 1–2 and 6 (re-arm the Monitor; `--baseline` gives you the current state and board in one event).
+1. Re-run preflight steps 1–2 and 6 (re-arm the watcher; `--baseline` gives you the current state and board in one event).
 2. Report position in one line ("Resumed at pick 41; you're up in 6; nothing critical missed / here's what changed: …") and pre-stage the next shortlist.
 
 Rehearse this at least once before a real draft by killing the session mid-mock and resuming.

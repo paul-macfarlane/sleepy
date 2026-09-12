@@ -3,6 +3,10 @@
   "user_id": "RESOLVED_DURING_ONBOARDING",
   "discord_webhook": "https://discord.com/api/webhooks/…",
   "season": "2026",
+  "agent": {
+    "provider": "auto",
+    "model": ""
+  },
   "leagues": [
     {
       "slug": "short-name-for-files",

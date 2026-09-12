@@ -14,11 +14,12 @@ Two modes:
 
   --loop: never exit while the draft is live. Print one compact JSON line per
   change (new picks / status change / user comes on the clock) and flush, so
-  a Monitor can turn each line into a wake-up. Exits 0 when the draft
-  completes. Fetch failures are reported as {"error": ...} lines after 3
+  an agent's persistent background-command facility can turn each line into a
+  wake-up. Exits 0 when the draft completes. Fetch failures are reported as
+  {"error": ...} lines after 3
   consecutive misses and polling continues — the loop never dies silently.
 
-  Monitor notifications truncate long lines (~500 chars), so the loop line is
+  Background-tool notifications may truncate long lines, so the loop line is
   deliberately small: status, counts, new picks as short strings ("6 Jonathan
   Taylor RB *" — * marks the user's own pick), on-clock flags, and when the
   board is attached only its headline (roster, runs, top 6). The full report —
@@ -306,7 +307,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("draft_id")
     ap.add_argument("--loop", action="store_true",
-                    help="never exit while live; one compact JSON line per change (for Monitor)")
+                    help="never exit while live; one compact JSON line per change (for a background tool)")
     ap.add_argument("--interval", type=int, default=15,
                     help="poll interval (s) while the draft is live; floor 10")
     ap.add_argument("--mock", action="store_true",
@@ -334,7 +335,7 @@ def main():
     uid = str(cfg.get("user_id", ""))
 
     def emit_loop(rep):
-        """Full report to disk, headline to stdout (Monitor truncates long lines)."""
+        """Write the full report to disk and a notification-safe headline to stdout."""
         with open(event_path, "w") as f:
             json.dump(rep, f, indent=1, ensure_ascii=False)
         emit(compact_report(rep, uid, event_path), compact=True)
@@ -366,7 +367,7 @@ def main():
             print(f"fetch error ({failures}/3): {e}", file=sys.stderr)
             if failures >= 3:
                 if a.loop:
-                    # Fail loudly on stdout so the Monitor wakes the session, then keep trying.
+                    # Fail loudly on stdout so the agent wakes the session, then keep trying.
                     emit({"error": f"{failures} consecutive fetch failures: {e}", "draft_id": a.draft_id}, True)
                     failures = 0
                     time.sleep(IDLE_INTERVAL)

@@ -8,7 +8,7 @@ Run this when the user asks to onboard, when `~/sleepy/config.json` is missing, 
 2. Ask for the user's Sleeper username; resolve `.user_id` via `/user/<username>`.
 3. Ask for (or create) a Discord webhook URL; store in config; send a test message via `scripts/notify.sh "Sleepy is connected ✅"` and confirm the user received it. If they don't have one: Discord → their private server → channel settings → Integrations → Webhooks → New Webhook → copy URL.
 4. Discover leagues via `/user/<user_id>/leagues/nfl/<season>`; confirm which to manage; for each, find its draft via `/league/<league_id>/drafts` and record league_id, draft_id, slot (from `.draft_order` once posted), a short slug for filenames.
-5. Write `~/sleepy/config.json` per `assets/config.template.json`.
+5. Ask which installed agent should power scheduled runs (Claude or OpenAI Codex) and write `~/sleepy/config.json` per `assets/config.template.json`. Use `agent.provider: "auto"` if only one is installed; if both are installed, record the user's explicit choice. Leave `agent.model` empty unless the user wants scheduled runs pinned to a particular model.
 6. Run `scripts/cache_players.sh`.
 7. Copy `assets/def_ranks.json` to `~/sleepy/def_ranks.json` and ask the user to reorder it (or do it from their rankings doc) — Sleeper has no DEF rankings, so this list is the only thing ordering team defenses on the draft board.
 
@@ -40,7 +40,7 @@ Don't demand completeness upfront. Capture what the user knows now; when a missi
 
 ## 4. Wrap-up
 
-Tell the user to start future sessions from `~/sleepy` (`cd ~/sleepy && claude`): that keeps Sleepy's reads and writes, Claude Code's per-project memory, and any permission rules in one place, and keeps the skill's source out of the working directory. If the current session was launched from the skill folder or a clone of the repo, say so and suggest switching. Then point them at a mock draft as the first real test (`references/draft-mode.md`).
+Tell the user to start future sessions from `~/sleepy` (`cd ~/sleepy`, then `claude` or `codex`): that keeps Sleepy's reads and writes, the agent's per-project context and permissions, and any provider-specific state in one place, while keeping the skill's source out of the working directory. If the current session was launched from the skill folder or a clone of the repo, say so and suggest switching. Then point them at a mock draft as the first real test (`references/draft-mode.md`).
 
 ## File format
 
