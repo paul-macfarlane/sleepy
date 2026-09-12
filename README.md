@@ -73,6 +73,8 @@ The default provider is `auto`, preferring Claude when both CLIs are installed t
 
 Environment variables override config: `SLEEPY_AGENT=claude|codex|auto`, `SLEEPY_AGENT_MODEL=<model>`, and `SLEEPY_AGENT_RUNNER=/path/to/adapter`. A custom adapter receives the complete prompt as its only argument, which lets other agents plug in without changing Sleepy.
 
+When migrating existing launchd jobs from Claude to Codex, setting the provider alone is not enough if the jobs still point to an older personal wrapper. Re-run the installer from the Codex skill after checking the template times match your existing schedule. Verify `launchctl print gui/$(id -u)/com.sleepy.lineups-sun` points to that skill's `scripts/scheduled_run.sh`. The wrapper also discovers Codex bundled in `/Applications/ChatGPT.app`; use `SLEEPY_EXTRA_PATH` for other nonstandard locations. Codex's global `--ask-for-approval never --search` options precede `exec`, which runs with a workspace-write sandbox and outbound network access.
+
 Or just open a session and ask about trades, start/sits, anything.
 
 ## Etiquette & limits

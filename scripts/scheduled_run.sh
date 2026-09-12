@@ -25,12 +25,17 @@ USER_HOME="${HOME:?HOME is not set}"
 export SLEEPY_HOME="${SLEEPY_HOME:-$USER_HOME/sleepy}"
 export LANG="${LANG:-en_US.UTF-8}"
 
-# Common install locations: native agent installers, Homebrew, nvm's newest node, python.org.
+# Common install locations: Codex desktop app, native agent installers, Homebrew,
+# nvm's newest node, and python.org.
 NVM_BIN=""
 if [ -d "$USER_HOME/.nvm/versions/node" ]; then
   NVM_BIN="$(ls -d "$USER_HOME"/.nvm/versions/node/*/bin 2>/dev/null | sort -V | tail -1)"
 fi
-export PATH="${SLEEPY_EXTRA_PATH:+$SLEEPY_EXTRA_PATH:}$USER_HOME/.local/bin:${NVM_BIN:+$NVM_BIN:}/Library/Frameworks/Python.framework/Versions/Current/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+CODEX_APP_BIN=""
+if [ -x "/Applications/ChatGPT.app/Contents/Resources/codex" ]; then
+  CODEX_APP_BIN="/Applications/ChatGPT.app/Contents/Resources"
+fi
+export PATH="${SLEEPY_EXTRA_PATH:+$SLEEPY_EXTRA_PATH:}${CODEX_APP_BIN:+$CODEX_APP_BIN:}$USER_HOME/.local/bin:${NVM_BIN:+$NVM_BIN:}/Library/Frameworks/Python.framework/Versions/Current/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
 LOG="$SLEEPY_HOME/logs/$LOGNAME.log"
 mkdir -p "$SLEEPY_HOME/logs"
