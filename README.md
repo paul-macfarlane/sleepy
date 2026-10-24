@@ -1,3 +1,5 @@
+> This was a initial attempt at creating a fantasy football assistant. This repo be referenced for later attempts at a similar tool, but this repo it is not something I plan on working on going forward.
+
 # Sleepy 😴🏈
 
 A Sleeper fantasy football assistant that runs as a skill in [Claude Code](https://claude.com/claude-code) or [OpenAI Codex](https://developers.openai.com/codex/cli). Live draft advice (real drafts and mocks), waiver and lineup analysis on a schedule, and strategy coaching — with proactive alerts to your Discord.
